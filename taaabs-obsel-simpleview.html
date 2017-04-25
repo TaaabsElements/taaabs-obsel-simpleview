@@ -1,11 +1,12 @@
-<link rel="import" href="../taaabs-themes/taaabs-dark-theme.html">
+<link rel="import" href="../taaabs-themes/taaabs-theme.html">
 <dom-module id="taaabs-obsel-simpleview">
   <template>
-    <style include="taaabs-dark-theme"></style>
+    <style include="taaabs-theme"></style>
     <style>
       :host {
         display: block;
         width : 100%;
+        padding: 0px;
       }
 
       :host #obsel_id{
@@ -37,7 +38,7 @@
           </tr>
         </thead>
         <tbody>
-          <template is="dom-repeat" items="{{_obselAttributes}}">
+          <template is="dom-repeat" items="{{_obselAttributes}}" sort="_sort">
             <tr>
               <td>{{item.name}}</td>
               <td>{{item.value}}</td>
@@ -127,16 +128,24 @@
         if( this.obsel !== null ){
           this.set('_obselAttributes', []);
           var keys = Object.keys(this.obsel);
+          var t = [];
           for( var i = 0; i < keys.length; i++ ){
             if( keys[i] !== "@id" && keys[i] !== "@type" && keys[i] !== "begin" && keys[i] !== "end")
-              this.push('_obselAttributes', {
-                "name": keys[i],
+              t.push({
+                "name": keys[i].replace('m:',''),
                 "value": this.obsel[keys[i]]
-              })
+              });
           }
+          this.set('_obselAttributes', t);
           this.obselId = this.obsel['@id'];
           this.obselType = this.obsel['@type'];
         }
+      },
+
+      _sort: function(a, b) {
+        if( a.name < b.name ) return -1;
+        else if( a.name > b.name) return 1;
+        else return 0;
       }
 
     });
