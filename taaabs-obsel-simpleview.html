@@ -1,4 +1,5 @@
 <link rel="import" href="../taaabs-themes/taaabs-theme.html">
+<link rel="import" href="../app-localize-behavior/app-localize-behavior.html">
 <dom-module id="taaabs-obsel-simpleview">
   <template>
     <style include="taaabs-theme"></style>
@@ -8,69 +9,101 @@
         width : 100%;
         padding: 0px;
       }
-
-      :host #obsel_id{
+      :host #obsel-id{
         padding: 5px;
         text-align: center;
         border: solid 1px gray;
       }
-
       :host iron-icon {
         float: right;
       }
+      :host h4{
+        margin: 6px;
+      }
+      :host .highlight-change {
+        animation-duration: 2s;
+        animation-name: hlc;
+      }
+      :host .number-value {
+        color: var(--paper-pink-500);
+      }
+      @keyframes hlc {
+        from {
+          color: var(--paper-blue-500);
+        }
+
+        to {
+          color: inherit;
+        }
+      }
     </style>
 
-    <div id="obsel_id">
+    <div id="obsel-id">
         <h4>{{obselId}}</h4>
     </div>
+
     <div style="padding:10px;width: 100%; broder-bottom: solid 1px gray">
+      <div style="float:right">
+        <span> [[localize('hide')]] </span>
+        <input type="checkbox" on-click="_onHideEmptyClick"></input>
+      </div>
       <div><b>Type: </b>{{obselType}}</div>
-      <div><b>Begin: </b>{{obsel.begin}} <iron-icon icon="notification:event-available"></iron-icon></div>
-      <div><b>End: </b>{{obsel.end}}</div>
+      <div><b>[[localize('begin')]]: </b>{{begin}} </div>
+      <template is="dom-if" if="{{!_sameTimes}}" restamp="true">
+        <div><b>[[localize('end')]]: </b>{{end}}</div>
+      </template>
     </div>
+
     <div style="padding:10px;width: 100%;">
-      <table>
+      <table style="width: 100%">
         <thead>
           <tr>
-            <th> Attribute </th>
-            <th> Value </th>
-            <th> Create template </th>
+            <th> [[localize('attribute')]] </th>
+            <th> [[localize('value')]] </th>
           </tr>
         </thead>
-        <tbody>
-          <template is="dom-repeat" items="{{_obselAttributes}}" sort="_sort">
+        <tbody id="t-body"><template strip-whitespace is="dom-repeat" items="{{_obselAttributes}}" as="attribute" sort="_sort" filter="{{_hideEmptyFilter(_hideEmpty)}}">
             <tr>
-              <td>{{item.name}}</td>
-              <td>{{item.value}}</td>
-              <td></td>
+              <td><span>[[attribute.name]]</span></td>
+              <td><span class$="{{_getClass(attribute, index)}}">[[attribute.value]]</span></td>
             </tr>
-          </template>
-        </tbody>
+          </template></tbody>
       </table>
     </div>
-
   </template>
-
-
-
   <script>
-
     Polymer({
       is: 'taaabs-obsel-simpleview',
       properties: {
-
         /**
-        * The obsel.
-        *
-        * @attribute obsel
-        * @type Object
-        */
+         * The obsel.
+         *
+         * @attribute obsel
+         * @type Object
+         */
         obsel: {
           type: Object,
           value: null,
           observer: '_obselChanged'
         },
 
+        /**
+         * The time unit of the trace. (hasUnit of the model of the trace)
+         *
+         * @attribute timeUnit
+         * @type String
+         */
+        timeUnit: {
+          type: String,
+          value: 'millisecond'
+        },
+
+        /**
+         * List of the obsel attributes to display.
+         *
+         * @attribute _obselAttributes
+         * @type Array
+         */
         _obselAttributes: {
           type: Array,
           notify: true,
@@ -78,74 +111,170 @@
         },
 
         /**
-        * Localization object.
-        *
-        * @attribute i18n
-        * @type Object
-        */
-		    i18n: {
-            type: Object,
-            value: {
-
-            },
-            notify: true
+         * True if we have to hide the empty attribute. False otherwise.
+         *
+         * @attribute _hideEmpty
+         * @type Boolean
+         */
+        _hideEmpty: {
+          type: Boolean,
+          value: false
         },
 
         /**
-        * Localization.
-        * fr, en.
-        *
-        * @attribute language
-        * @type String
-        */
+         * i18n dictionnary.
+         *
+         * @attribute resources
+         * @type Object
+         */
+        resources: {
+          type: Object,
+          value: function(){
+            return {
+              'en': {
+                'attribute': 'Attribute',
+                'value'    : 'Value',
+                'begin'    : 'Begin',
+                'end'      : 'End',
+                'hide'     : 'Hide empty'
+              },
+              'fr': {
+                'attribute': 'Attribut',
+                'value'    : 'Valeur',
+                'begin'    : 'Début',
+                'end'      : 'Fin',
+                'hide'     : 'Cacher vide'
+              }
+            }
+          }
+        },
+
+        /**
+         * Localization.
+         * fr, en.
+         *
+         * @attribute language
+         * @type String
+         */
         language: {
             type: String,
-            notify: true,
-            observer: "_languageChanged"
+            value: 'fr'
         },
 
       },
 
+      behaviors: [
+        Polymer.AppLocalizeBehavior
+      ],
 
-	  listeners:{
+  	  listeners:{},
 
-	  },
+      ready: function(){},
 
-
-      _languageChanged: function(){
-        for(var prop in this.i18n) {
-          var tmp = "i18n."+prop+".default";
-          this.set(tmp, this.i18n[prop][this.language]);
-        }
+      /**
+       * On `hide empty checkbox` click.
+       *
+       * @param {!required} evt {Event} The click event.
+       *
+       * @method _onHideEmptyClick
+       */
+      _onHideEmptyClick: function(evt){
+        this.set('_hideEmpty', evt.target.checked);
       },
 
-      ready: function(){
-
-
-      },
-
+      /**
+       * On `obsel` change. Reset `_obselAttributes`, type & begin/end with the new values.
+       *
+       * @method _obselChanged
+       */
       _obselChanged: function(){
         if( this.obsel !== null ){
+          // Set the begin/end
+          this.set('_sameTimes', (this.obsel.begin === this.obsel.end) );
+          if(this.timeUnit === 'millisecond'){
+            this.set('begin', new Date(this.obsel.begin).toUTCString());
+            this.set('end', new Date(this.obsel.end).toUTCString());
+          }
+          else{
+            this.set('begin', this.obsel.begin);
+            this.set('end', this.obsel.end);
+          }
+          // Save the old attributes values, to check fro changes.
+          var old = this.get('_obselAttributes');
           this.set('_obselAttributes', []);
+          // Get the new attributes values.
           var keys = Object.keys(this.obsel);
           var t = [];
           for( var i = 0; i < keys.length; i++ ){
-            if( keys[i] !== "@id" && keys[i] !== "@type" && keys[i] !== "begin" && keys[i] !== "end")
+            if( keys[i] !== "@id" && keys[i] !== "@type" && keys[i] !== "begin" && keys[i] !== "end" && keys[i] !== "subject")
               t.push({
                 "name": keys[i].replace('m:',''),
-                "value": this.obsel[keys[i]]
+                "value": this.obsel[keys[i]],
+                "hlv": false
               });
           }
+          // Compare old and new attributes to look for changes.
+          for(var i = 0 ; i < t.length; i++){
+            var exists = false;
+            for(var j = 0; j < old.length; j++){
+              if(old[j].name === t[i].name){
+                exists = true;
+                if(old[j].value !== t[i].value){
+                  t[i].hlv = true;
+                }
+              }
+            }
+            t[i].hlv = (t[i].hlv || !exists);
+          }
+          // Set the new attributes values.
           this.set('_obselAttributes', t);
           this.obselId = this.obsel['@id'];
-          this.obselType = this.obsel['@type'];
+          this.obselType = this.obsel['@type'].replace('m:','');
         }
       },
 
+      /**
+       * Sort the `_obselAttributes` dom-repeat in alphabetic order on the name of an attribute.
+       *
+       * @method _sort
+       */
       _sort: function(a, b) {
         if( a.name < b.name ) return -1;
         else if( a.name > b.name) return 1;
         else return 0;
+      },
+
+      /**
+       * Filter on the `_obselAttributes` dom-repeat.
+       * If `_hideEmpty` is true, doesn't return the attributes with empty value.
+       * Otherwise, returns everything \o/
+       *
+       * @method _hideEmptyFilter
+       */
+      _hideEmptyFilter: function(hideEmpty){
+        if (!hideEmpty) {
+          return null;
+        } else {
+          return function(attribute) {
+            return (attribute.value !== "" && attribute.value !== null && attribute.value !== undefined);;
+          };
+        }
+      },
+
+      /**
+       * Highlight an attribute value if the attribute has changed or it's value has changed.
+       *
+       * @method _getClass
+       */
+      _getClass: function(attribute, index){
+        try {
+          this.$['t-body'].childNodes[index].childNodes[1].childNodes[0].classList.remove('highlight-change');
+          void this.$['t-body'].childNodes[index].childNodes[1].childNodes[0].offsetWidth;
+        } catch (e) {}
+        var classes = '';
+        if( typeof attribute.value === "number") classes += 'number-value ';
+        if(attribute.hlv) classes += 'highlight-change';
+        return classes;
       }
 
     });
