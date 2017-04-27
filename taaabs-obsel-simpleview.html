@@ -24,9 +24,6 @@
         animation-duration: 2s;
         animation-name: hlc;
       }
-      :host .number-value {
-        color: var(--paper-pink-500);
-      }
       @keyframes hlc {
         from {
           color: var(--paper-blue-500);
@@ -272,7 +269,6 @@
           void this.$['t-body'].childNodes[index].childNodes[1].childNodes[0].offsetWidth;
         } catch (e) {}
         var classes = '';
-        if( typeof attribute.value === "number") classes += 'number-value ';
         if(attribute.hlv) classes += 'highlight-change';
         return classes;
       }
