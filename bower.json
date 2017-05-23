@@ -17,8 +17,8 @@
   "main": "taaabs-obsel-simpleview.html",
   "license": "https://github.com/TaaabsElements/taaabs-obsel-simpleview/LICENSE",
   "dependencies": {
-    "polymer": "polymer/polymer",
-    "app-localize-behavior": "PolymerElements/app-localize-behavior",
+    "polymer": "Polymer/polymer#<2.*",
+    "app-localize-behavior": "PolymerElements/app-localize-behavior#<2.*",
     "taaabs-themes":"TaaabsElements/taaabs-themes"
   },
   "devDependencies": {
